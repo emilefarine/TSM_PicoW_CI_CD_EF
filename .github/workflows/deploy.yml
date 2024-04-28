@@ -1,0 +1,31 @@
+# Define the trigger event(s)
+# Only deploy when a new tag is pushed (’push:tags:’) or manually (with ’workflow_dispatch:’)
+# If pushing tag, it has to match "v*.*.*"
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+env:
+  APP_NAME: TSM_PicoW_CI_CD
+# Allow this workflow to write back to the repository
+permissions:
+  contents: write
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # Build binary and send to releases
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build and deploy
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v3
+      - name: Build Docker image
+        run: docker build -t tsmcicd-image .
+      - name: Create Docker container
+        run: docker create --name tsmcicd-container tsmcicd-image
+      - name: Copy out Intel Hex file
+        run: docker cp tsmcicd-container:/project/build/release/${APP_NAME}.hex ./${APP_NAME}.hex
+
